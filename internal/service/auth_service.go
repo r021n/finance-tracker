@@ -4,7 +4,9 @@ import (
 	"errors"
 	"finance-tracker/internal/model"
 	"finance-tracker/internal/repository"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -73,4 +75,17 @@ func (s *AuthService) Login(req model.LoginRequest) (*model.AuthResponse, error)
 	}
 
 	return &model.AuthResponse{Token: token, User: *user}, nil
+}
+
+func (s *AuthService) generateToken(user *model.User) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"role":    user.Role,
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		"iat":     time.Now().Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.jwtSecret))
 }
