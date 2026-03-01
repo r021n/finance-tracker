@@ -6,6 +6,7 @@ import (
 	"finance-tracker/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type AuthService struct {
@@ -51,4 +52,25 @@ func (s *AuthService) Register(req model.RegisterRequest) (*model.AuthResponse, 
 		Token: token,
 		User:  *user,
 	}, nil
+}
+
+func (s *AuthService) Login(req model.LoginRequest) (*model.AuthResponse, error) {
+	user, err := s.userRepo.FindByEmail(req.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Invalid email or password")
+		}
+		return nil, errors.New("Failed to find user")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return nil, errors.New("invalid email or password")
+	}
+
+	token, err := s.generateToken(user)
+	if err != nil {
+		return nil, errors.New("Failed to generate token")
+	}
+
+	return &model.AuthResponse{Token: token, User: *user}, nil
 }
