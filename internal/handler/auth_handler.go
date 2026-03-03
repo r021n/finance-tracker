@@ -43,3 +43,26 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, model.SuccessResponse("registration successful", res))
 }
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var req model.LoginRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid request body"))
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatValidationError(validationErrors)))
+		return
+	}
+
+	res, err := h.authService.Login(req)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponse("login successful", res))
+}
