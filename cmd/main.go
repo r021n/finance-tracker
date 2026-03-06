@@ -2,7 +2,11 @@ package main
 
 import (
 	"finance-tracker/internal/config"
+	"finance-tracker/internal/handler"
+	"finance-tracker/internal/middleware"
 	"finance-tracker/internal/model"
+	"finance-tracker/internal/repository"
+	"finance-tracker/internal/service"
 	"fmt"
 	"log"
 
@@ -37,11 +41,37 @@ func main() {
 
 	log.Println("Migration completed successfully")
 
+	userRepo := repository.NewUserRepository(db)
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
+	authHandler := handler.NewAuthHandler(authService)
+
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, model.SuccessResponse("server is running", nil))
 	})
+
+	auth := r.Group("/api/auth")
+	{
+		auth.POST("/register", authHandler.Register)
+		auth.POST("/login", authHandler.Login)
+	}
+
+	protected := r.Group("/api")
+	protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	{
+		protected.GET("/profile", func(c *gin.Context) {
+			userID, _ := c.Get("user_id")
+			email, _ := c.Get("email")
+			role, _ := c.Get("role")
+
+			c.JSON(200, model.SuccessResponse("profile retrieved", gin.H{
+				"user_id": userID,
+				"email":   email,
+				"role":    role,
+			}))
+		})
+	}
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Server starting on %s", addr)
