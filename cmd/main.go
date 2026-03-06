@@ -73,6 +73,15 @@ func main() {
 		})
 	}
 
+	admin := r.Group("/api/admin")
+	admin.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	admin.Use(middleware.AdminMiddleware())
+	{
+		admin.GET("/dashboard", func(c *gin.Context) {
+			c.JSON(200, model.SuccessResponse("welcome admin", nil))
+		})
+	}
+
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Server starting on %s", addr)
 
