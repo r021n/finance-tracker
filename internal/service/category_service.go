@@ -74,3 +74,36 @@ func (s *CategoryService) Update(id uint, req model.UpdateCategoryRequest) (*mod
 
 	return category, nil
 }
+
+func (s *CategoryService) Delete(id uint) error {
+	_, err := s.categoryRepo.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("category not found")
+		}
+	}
+
+	if err := s.categoryRepo.Delete(id); err != nil {
+		return errors.New("failed to delete category")
+	}
+
+	return nil
+}
+
+func (s *CategoryService) Seed() error {
+	defaults := []string{"Food", "Transport", "Bill"}
+
+	for _, name := range defaults {
+		existing, _ := s.categoryRepo.FindByName(name)
+		if existing != nil {
+			continue
+		}
+
+		category := &model.Category{Name: name}
+		if err := s.categoryRepo.Create(category); err != nil {
+			return errors.New("failed to seed category: " + name)
+		}
+	}
+
+	return nil
+}
