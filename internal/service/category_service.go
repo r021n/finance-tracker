@@ -4,6 +4,8 @@ import (
 	"errors"
 	"finance-tracker/internal/model"
 	"finance-tracker/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type CategoryService struct {
@@ -28,5 +30,24 @@ func (s *CategoryService) Create(req model.CreateCategoryRequest) (*model.Catego
 		return nil, errors.New("failed to create category")
 	}
 
+	return category, nil
+}
+
+func (s *CategoryService) GetAll() ([]model.Category, error) {
+	categories, err := s.categoryRepo.FindAll()
+	if err != nil {
+		return nil, errors.New("failed to fetch categories")
+	}
+	return categories, nil
+}
+
+func (s *CategoryService) GetByID(id uint) (*model.Category, error) {
+	category, err := s.categoryRepo.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("category not found")
+		}
+		return nil, errors.New("failed to fetch category")
+	}
 	return category, nil
 }
