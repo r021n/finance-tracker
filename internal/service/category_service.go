@@ -51,3 +51,26 @@ func (s *CategoryService) GetByID(id uint) (*model.Category, error) {
 	}
 	return category, nil
 }
+
+func (s *CategoryService) Update(id uint, req model.UpdateCategoryRequest) (*model.Category, error) {
+	category, err := s.categoryRepo.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("category not found")
+		}
+		return nil, errors.New("failed to fetch category")
+	}
+
+	existing, _ := s.categoryRepo.FindByName(req.Name)
+	if existing != nil && existing.ID != id {
+		return nil, errors.New("category name already exists")
+	}
+
+	category.Name = req.Name
+
+	if err := s.categoryRepo.Update(category); err != nil {
+		return nil, errors.New("failed to update category")
+	}
+
+	return category, nil
+}
