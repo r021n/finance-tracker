@@ -70,3 +70,36 @@ func (h *CategoryHandler) GetByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.SuccessResponse("category retrieved successfully", category))
 }
+
+func (h *CategoryHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid category id"))
+		return
+	}
+
+	var req model.UpdateCategoryRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid request body"))
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatCategoryValidationError(validationErrors)))
+		return
+	}
+
+	category, err := h.categoryService.Update(uint(id), req)
+	if err != nil {
+		if err.Error() == "category not found" {
+			c.JSON(http.StatusNotFound, model.ErrorResponse(err.Error()))
+			return
+		}
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponse("category updated successfully", category))
+}
