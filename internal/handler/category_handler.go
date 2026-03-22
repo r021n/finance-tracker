@@ -103,3 +103,36 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.SuccessResponse("category updated successfully", category))
 }
+
+func (h *CategoryHandler) Delete(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid category id"))
+		return
+	}
+
+	if err := h.categoryService.Delete(uint(id)); err != nil {
+		if err.Error() == "category not found" {
+			c.JSON(http.StatusNotFound, model.ErrorResponse(err.Error()))
+			return
+		}
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponse("category deleted successfully", nil))
+}
+
+func formatCategoryValidationError(errs validator.ValidationErrors) string {
+	for _, e := range errs {
+		switch e.Tag() {
+		case "required":
+			return e.Field() + "is required"
+		case "min":
+			return e.Field() + "must be at least" + e.Param() + "characters"
+		case "max":
+			return e.Field() + "must be at most" + e.Param() + "characters"
+		}
+	}
+	return "validation failed"
+}
