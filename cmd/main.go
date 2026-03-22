@@ -42,8 +42,19 @@ func main() {
 	log.Println("Migration completed successfully")
 
 	userRepo := repository.NewUserRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
+
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
+	categoryService := service.NewCategoryService(categoryRepo)
+
+	if err := categoryService.Seed(); err != nil {
+		log.Printf("Warning: failed to seed categories: %v", err)
+	} else {
+		log.Println("Categories seeded successfully")
+	}
+
 	authHandler := handler.NewAuthHandler(authService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
 
 	r := gin.Default()
 
@@ -71,6 +82,8 @@ func main() {
 				"role":    role,
 			}))
 		})
+		protected.GET("/categories", categoryHandler.GetAll)
+		protected.GET("/categories/:id", categoryHandler.GetByID)
 	}
 
 	admin := r.Group("/api/admin")
@@ -80,6 +93,9 @@ func main() {
 		admin.GET("/dashboard", func(c *gin.Context) {
 			c.JSON(200, model.SuccessResponse("welcome admin", nil))
 		})
+		admin.POST("/categories", categoryHandler.Create)
+		admin.PUT("/categories/:id", categoryHandler.Update)
+		admin.DELETE("/categories/:id", categoryHandler.Delete)
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
