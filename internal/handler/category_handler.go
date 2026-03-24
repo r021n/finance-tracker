@@ -127,11 +127,11 @@ func formatCategoryValidationError(errs validator.ValidationErrors) string {
 	for _, e := range errs {
 		switch e.Tag() {
 		case "required":
-			return e.Field() + "is required"
+			return e.Field() + " is required"
 		case "min":
-			return e.Field() + "must be at least" + e.Param() + "characters"
+			return e.Field() + " must be at least " + e.Param() + " characters"
 		case "max":
-			return e.Field() + "must be at most" + e.Param() + "characters"
+			return e.Field() + " must be at most " + e.Param() + " characters"
 		}
 	}
 	return "validation failed"
