@@ -86,3 +86,11 @@ func (r *TransactionRepository) FindAllByUserID(userID uint, filter model.Transa
 
 	return transactions, total, nil
 }
+
+func (r *TransactionRepository) Update(transaction *model.Transaction) error {
+	return r.db.Save(transaction).Error
+}
+
+func (r *TransactionRepository) Delete(id uint, userID uint) error {
+	return r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Transaction{}).Error
+}
