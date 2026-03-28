@@ -99,3 +99,59 @@ func (s *TransactionService) GetAll(userID uint, filter model.TransactionFilter)
 
 	return transactions, meta, nil
 }
+
+func (s *TransactionService) Update(id uint, userID uint, req model.UpdateTransactionRequest) (*model.Transaction, error) {
+	transaction, err := s.transactionRepo.FindByIDAndUserID(id, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("transaciton not found")
+		}
+		return nil, errors.New("failed to fetch transaction")
+	}
+
+	_, err = s.categoryRepo.FindByID(req.CategoryID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("category not found")
+		}
+		return nil, errors.New("failed to validate category")
+	}
+
+	date, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		return nil, errors.New("invalid date format, use YYYY-MM-DD")
+	}
+
+	transaction.CategoryID = req.CategoryID
+	transaction.Type = req.Type
+	transaction.Amount = req.Amount
+	transaction.Note = req.Note
+	transaction.Date = date
+
+	if err := s.transactionRepo.Update(transaction); err != nil {
+		return nil, errors.New("failed to update transaction")
+	}
+
+	updated, err := s.transactionRepo.FindByIDAndUserID(id, userID)
+	if err != nil {
+		return nil, errors.New("failed to fetch updated transaction")
+	}
+
+	return updated, nil
+}
+
+func (s *TransactionService) Delete(id uint, userID uint) error {
+	_, err := s.transactionRepo.FindByIDAndUserID(id, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("transaciton not found")
+		}
+		return errors.New("failed to fetch transaction")
+	}
+
+	if err := s.transactionRepo.Delete(id, userID); err != nil {
+		return errors.New("failed to delete transaction")
+	}
+
+	return nil
+}
