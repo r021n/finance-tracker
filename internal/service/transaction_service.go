@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance-tracker/internal/model"
 	"finance-tracker/internal/repository"
+	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -57,4 +58,44 @@ func (s *TransactionService) Create(userID uint, req model.CreateTransactionRequ
 	}
 
 	return created, nil
+}
+
+func (s *TransactionService) FindByID(id uint, userID uint) (*model.Transaction, error) {
+	transaction, err := s.transactionRepo.FindByIDAndUserID(id, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("transaction not found")
+		}
+		return nil, errors.New("failed to fetch transaction")
+	}
+
+	return transaction, nil
+}
+
+func (s *TransactionService) GetAll(userID uint, filter model.TransactionFilter) ([]model.Transaction, *model.Meta, error) {
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = 10
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+
+	transactions, total, err := s.transactionRepo.FindAllByUserID(userID, filter)
+	if err != nil {
+		return nil, nil, errors.New("failed to fetch transactions")
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(filter.Limit)))
+
+	meta := &model.Meta{
+		CurrentPage: filter.Page,
+		PerPage:     filter.Limit,
+		TotalItems:  total,
+		TotalPages:  totalPages,
+	}
+
+	return transactions, meta, nil
 }
