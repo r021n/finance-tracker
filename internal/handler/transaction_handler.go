@@ -46,6 +46,24 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, model.SuccessResponse("transaction created successfully", transaction))
 }
 
+func (h *TransactionHandler) GetAll(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+
+	var filter model.TransactionFilter
+	if err := c.ShouldBindJSON(&filter); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid query parameters"))
+		return
+	}
+
+	transactions, meta, err := h.transactionService.GetAll(userID, filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponseWithMeta("transactions retrieved successfully", transactions, meta))
+}
+
 func formatTransactionValidationError(errs validator.ValidationErrors) string {
 	for _, e := range errs {
 		field := e.Field()
