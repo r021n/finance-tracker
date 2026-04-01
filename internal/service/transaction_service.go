@@ -60,7 +60,7 @@ func (s *TransactionService) Create(userID uint, req model.CreateTransactionRequ
 	return created, nil
 }
 
-func (s *TransactionService) FindByID(id uint, userID uint) (*model.Transaction, error) {
+func (s *TransactionService) GetByID(id uint, userID uint) (*model.Transaction, error) {
 	transaction, err := s.transactionRepo.FindByIDAndUserID(id, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

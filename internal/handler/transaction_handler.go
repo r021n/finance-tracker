@@ -4,6 +4,7 @@ import (
 	"finance-tracker/internal/model"
 	"finance-tracker/internal/service"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -62,6 +63,28 @@ func (h *TransactionHandler) GetAll(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.SuccessResponseWithMeta("transactions retrieved successfully", transactions, meta))
+}
+
+func (h *TransactionHandler) GetById(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid transaction id"))
+		return
+	}
+
+	transaction, err := h.transactionService.GetByID(uint(id), userID)
+	if err != nil {
+		if err.Error() == "transaction not found" {
+			c.JSON(http.StatusNotFound, model.ErrorResponse(err.Error()))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponse("transaction retrieved successfully", transaction))
 }
 
 func formatTransactionValidationError(errs validator.ValidationErrors) string {
