@@ -87,6 +87,62 @@ func (h *TransactionHandler) GetById(c *gin.Context) {
 	c.JSON(http.StatusOK, model.SuccessResponse("transaction retrieved successfully", transaction))
 }
 
+func (h *TransactionHandler) Update(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid transaction id"))
+		return
+	}
+
+	var req model.UpdateTransactionRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid request body"))
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatTransactionValidationError(validationErrors)))
+		return
+	}
+
+	transaction, err := h.transactionService.Update(uint(id), userID, req)
+	if err != nil {
+		if err.Error() == "transaction not found" {
+			c.JSON(http.StatusNotFound, model.ErrorResponse(err.Error()))
+			return
+		}
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponse("transaction updated successfully", transaction))
+}
+
+func (h *TransactionHandler) Delete(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid transaction id"))
+		return
+	}
+
+	if err := h.transactionService.Delete(uint(id), userID); err != nil {
+		if err.Error() == "transaction not found" {
+			c.JSON(http.StatusNotFound, model.ErrorResponse(err.Error()))
+			return
+		}
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResponse("transaction deleted successfully", nil))
+}
+
 func formatTransactionValidationError(errs validator.ValidationErrors) string {
 	for _, e := range errs {
 		field := e.Field()
