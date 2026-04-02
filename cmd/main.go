@@ -43,9 +43,11 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
+	transactionRepo := repository.NewTransactionRepository(db)
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
 	categoryService := service.NewCategoryService(categoryRepo)
+	transactionService := service.NewTransactionService(transactionRepo, categoryRepo)
 
 	if err := categoryService.Seed(); err != nil {
 		log.Printf("Warning: failed to seed categories: %v", err)
@@ -55,6 +57,7 @@ func main() {
 
 	authHandler := handler.NewAuthHandler(authService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
+	transactionHandler := handler.NewTransactionHandler(transactionService)
 
 	r := gin.Default()
 
@@ -84,6 +87,12 @@ func main() {
 		})
 		protected.GET("/categories", categoryHandler.GetAll)
 		protected.GET("/categories/:id", categoryHandler.GetByID)
+
+		protected.POST("/transactions", transactionHandler.Create)
+		protected.GET("/transactions", transactionHandler.GetAll)
+		protected.GET("/transactions/:id", transactionHandler.GetByID)
+		protected.PUT("/transactions/:id", transactionHandler.Update)
+		protected.DELETE("/transactions/:id", transactionHandler.Delete)
 	}
 
 	admin := r.Group("/api/admin")

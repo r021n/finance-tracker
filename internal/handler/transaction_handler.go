@@ -65,7 +65,7 @@ func (h *TransactionHandler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, model.SuccessResponseWithMeta("transactions retrieved successfully", transactions, meta))
 }
 
-func (h *TransactionHandler) GetById(c *gin.Context) {
+func (h *TransactionHandler) GetByID(c *gin.Context) {
 	userID := c.MustGet("user_id").(uint)
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
