@@ -51,7 +51,7 @@ func (r *TransactionRepository) FindAllByUserID(userID uint, filter model.Transa
 	}
 
 	if filter.StartDate != "" {
-		query = query.Where("data >= ?", filter.StartDate)
+		query = query.Where("date >= ?", filter.StartDate)
 	}
 
 	if filter.EndDate != "" {

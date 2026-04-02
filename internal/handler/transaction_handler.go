@@ -51,7 +51,7 @@ func (h *TransactionHandler) GetAll(c *gin.Context) {
 	userID := c.MustGet("user_id").(uint)
 
 	var filter model.TransactionFilter
-	if err := c.ShouldBindJSON(&filter); err != nil {
+	if err := c.ShouldBindQuery(&filter); err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse("invalid query parameters"))
 		return
 	}
