@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"finance-tracker/internal/model"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,14 +12,14 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, model.ErrorResponse("authorization header is required"))
+			model.RespondUnauthorized(c, "authorization header is required")
 			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, model.ErrorResponse("invalid authorization header format"))
+			model.RespondUnauthorized(c, "invalid authorization header format")
 			c.Abort()
 			return
 		}
@@ -35,14 +34,14 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, model.ErrorResponse("invalid or expired token"))
+			model.RespondUnauthorized(c, "invalid or expired token")
 			c.Abort()
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.JSON(http.StatusUnauthorized, model.ErrorResponse("invalid token claims"))
+			model.RespondUnauthorized(c, "invalid token claims")
 			c.Abort()
 			return
 		}
@@ -63,7 +62,7 @@ func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists || role != "admin" {
-			c.JSON(http.StatusForbidden, model.ErrorResponse("admin access required"))
+			model.RespondForbidden(c, "admin access required")
 			c.Abort()
 			return
 		}
