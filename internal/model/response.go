@@ -1,5 +1,11 @@
 package model
 
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
 type Response struct {
 	Status  string      `json:"status"`
 	Message string      `json:"message"`
@@ -36,4 +42,36 @@ func ErrorResponse(message string) Response {
 		Status:  "error",
 		Message: message,
 	}
+}
+
+func RespondSuccess(c *gin.Context, statusCode int, message string, data interface{}) {
+	c.JSON(statusCode, SuccessResponse(message, data))
+}
+
+func RespondSuccessWithMeta(c *gin.Context, statusCode int, message string, data interface{}, meta *Meta) {
+	c.JSON(statusCode, SuccessResponseWithMeta(message, data, meta))
+}
+
+func RespondError(c *gin.Context, statusCode int, message string) {
+	c.JSON(statusCode, ErrorResponse(message))
+}
+
+func RespondBadRequest(c *gin.Context, message string) {
+	RespondError(c, http.StatusBadRequest, message)
+}
+
+func RespondUnauthorized(c *gin.Context, message string) {
+	RespondError(c, http.StatusUnauthorized, message)
+}
+
+func RespondForbidden(c *gin.Context, message string) {
+	RespondError(c, http.StatusForbidden, message)
+}
+
+func RespondNotFound(c *gin.Context, message string) {
+	RespondError(c, http.StatusNotFound, message)
+}
+
+func RespondInternalError(c *gin.Context, message string) {
+	RespondError(c, http.StatusInternalServerError, message)
 }
