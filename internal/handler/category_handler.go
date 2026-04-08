@@ -32,7 +32,7 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 
 	if err := h.validate.Struct(req); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatCategoryValidationError(validationErrors)))
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(FormatValidationError(validationErrors)))
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 
 	if err := h.validate.Struct(req); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatCategoryValidationError(validationErrors)))
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(FormatValidationError(validationErrors)))
 		return
 	}
 
@@ -121,18 +121,4 @@ func (h *CategoryHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.SuccessResponse("category deleted successfully", nil))
-}
-
-func formatCategoryValidationError(errs validator.ValidationErrors) string {
-	for _, e := range errs {
-		switch e.Tag() {
-		case "required":
-			return e.Field() + " is required"
-		case "min":
-			return e.Field() + " must be at least " + e.Param() + " characters"
-		case "max":
-			return e.Field() + " must be at most " + e.Param() + " characters"
-		}
-	}
-	return "validation failed"
 }

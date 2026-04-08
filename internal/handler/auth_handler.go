@@ -31,7 +31,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	if err := h.validate.Struct(req); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatValidationError(validationErrors)))
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(FormatValidationError(validationErrors)))
 		return
 	}
 
@@ -54,7 +54,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	if err := h.validate.Struct(req); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		c.JSON(http.StatusBadRequest, model.ErrorResponse(formatValidationError(validationErrors)))
+		c.JSON(http.StatusBadRequest, model.ErrorResponse(FormatValidationError(validationErrors)))
 		return
 	}
 
@@ -65,21 +65,4 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.SuccessResponse("login successful", res))
-}
-
-func formatValidationError(errs validator.ValidationErrors) string {
-	for _, e := range errs {
-		switch e.Tag() {
-		case "required":
-			return e.Field() + " is required"
-		case "email":
-			return e.Field() + " must be a valid email"
-		case "min":
-			return e.Field() + " must be at least " + e.Param() + " characters"
-		case "max":
-			return e.Field() + " must be at most " + e.Param() + " characters"
-		}
-	}
-
-	return "validation failed"
 }
