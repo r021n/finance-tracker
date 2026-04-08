@@ -11,6 +11,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -21,25 +22,31 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	logger, err := config.NewDevelopmentLogger()
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
+
 	db, err := gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Fatal("Failed to connect to database", zap.Error(err))
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Failed to get database instance: %v", err)
+		logger.Fatal("Failed to get database instance", zap.Error(err))
 	}
 	defer sqlDB.Close()
 
-	log.Println("Connected to database successfully")
+	logger.Info("Connected to database successfully")
 
 	err = db.AutoMigrate(&model.User{}, &model.Category{}, &model.Transaction{})
 	if err != nil {
-		log.Fatalf("Failed to run auto migration: %v", err)
+		logger.Fatal("Failed to run auto migration", zap.Error(err))
 	}
 
-	log.Println("Migration completed successfully")
+	logger.Info("Migration completed successfully")
 
 	userRepo := repository.NewUserRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
@@ -50,9 +57,9 @@ func main() {
 	transactionService := service.NewTransactionService(transactionRepo, categoryRepo)
 
 	if err := categoryService.Seed(); err != nil {
-		log.Printf("Warning: failed to seed categories: %v", err)
+		logger.Warn("Failed to seed categories", zap.Error(err))
 	} else {
-		log.Println("Categories seeded successfully")
+		logger.Info("Categories seeded successfully")
 	}
 
 	authHandler := handler.NewAuthHandler(authService)
@@ -108,9 +115,9 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
-	log.Printf("Server starting on %s", addr)
+	logger.Info("Server starting", zap.String("address", addr))
 
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 }
