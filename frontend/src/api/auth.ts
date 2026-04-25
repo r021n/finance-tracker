@@ -18,7 +18,7 @@ export const authApi = {
     data: RegisterRequest,
   ): Promise<ApiResponse<AuthResponse>> => {
     const response = await api.post<ApiResponse<AuthResponse>>(
-      "/auth/login",
+      "/auth/register",
       data,
     );
     return response.data;
