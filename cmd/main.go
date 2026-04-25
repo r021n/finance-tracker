@@ -66,10 +66,23 @@ func main() {
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 
-	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+
+	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.RecoveryMiddleware(logger))
+	r.Use(middleware.LoggerMiddleware(logger))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, model.SuccessResponse("server is running", nil))
+	})
+
+	r.NoRoute(func(c *gin.Context) {
+		model.RespondNotFound(c, "route not found")
+	})
+
+	r.NoMethod(func(c *gin.Context) {
+		model.RespondError(c, 405, "method not allowed")
 	})
 
 	auth := r.Group("/api/auth")
