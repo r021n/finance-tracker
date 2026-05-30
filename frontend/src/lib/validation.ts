@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const loginSchema = z.object({
   email: z
@@ -66,5 +66,5 @@ export const categorySchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
-export type TransactionFormData = z.infer<typeof transactionSchema>;
+export type TransactionFormData = z.input<typeof transactionSchema>;
 export type categoryFormData = z.infer<typeof categorySchema>;
