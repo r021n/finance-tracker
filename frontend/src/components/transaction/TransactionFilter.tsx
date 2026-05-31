@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Divide, Filter, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 
 import { categoriesApi } from "../../api/categories";
 import type { TransactionFilter as FilterType } from "../../api/transactions";
