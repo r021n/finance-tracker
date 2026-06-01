@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, ArrowLeftRight } from "lucide-react";
 
-import { transactionsApi, type TransactionFilter } from "../api/transactions";
+import {
+  transactionsApi,
+  type CreateTransactionData,
+  type TransactionFilter,
+} from "../api/transactions";
 import type { Transaction } from "../types";
 import type { TransactionFormData } from "../lib/validation";
 import MainLayout from "../components/layout/MainLayout";
@@ -61,7 +65,7 @@ export default function TransactionsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
+    mutationFn: ({ id, data }: { id: number; data: CreateTransactionData }) =>
       transactionsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });

@@ -67,4 +67,4 @@ export const categorySchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type TransactionFormData = z.input<typeof transactionSchema>;
-export type categoryFormData = z.infer<typeof categorySchema>;
+export type CategoryFormData = z.infer<typeof categorySchema>;
