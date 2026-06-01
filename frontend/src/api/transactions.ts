@@ -43,7 +43,7 @@ export const transactionsApi = {
         return response.data
     },
 
-    getById: async(id: string): Promise<ApiResponse<Transaction>> => {
+    getById: async(id: number): Promise<ApiResponse<Transaction>> => {
         const response = await api.get<ApiResponse<Transaction>>(`/transactions/${id}`);
         return response.data;
     },
@@ -53,12 +53,12 @@ export const transactionsApi = {
         return response.data;
     }, 
 
-    update: async(id: string, data: CreateTransactionData): Promise<ApiResponse<Transaction>> => {
+    update: async(id: number, data: CreateTransactionData): Promise<ApiResponse<Transaction>> => {
         const response = await api.put<ApiResponse<Transaction>>(`/transactions/${id}`, data);
         return response.data;
     },
 
-    delete: async(id: string): Promise<ApiResponse<null>> => {
+    delete: async(id: number): Promise<ApiResponse<null>> => {
         const response = await api.delete<ApiResponse<null>>(`/transactions/${id}`);
         return response.data;
     }
