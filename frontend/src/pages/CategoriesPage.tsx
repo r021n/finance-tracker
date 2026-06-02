@@ -135,7 +135,7 @@ export default function CategoryPage() {
       )}
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        {isLoading ? (
+        {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
@@ -188,6 +188,100 @@ export default function CategoryPage() {
           </div>
         )}
       </div>
+
+      {/* Create category */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          createForm.reset();
+        }}
+        title="Add Category"
+      >
+        <form
+          onSubmit={createForm.handleSubmit((data) =>
+            createMutation.mutateAsync(data),
+          )}
+          className="space-y-4"
+        >
+          <Input
+            label="Category Name"
+            placeholder="e.g. Shopping"
+            error={createForm.formState.errors.name?.message}
+            {...createForm.register("name")}
+          />
+          <div className="flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsCreateModalOpen(false);
+                createForm.reset();
+              }}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={createMutation.isPending}>
+              Create
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Category */}
+      <Modal
+        isOpen={!!editingCategory}
+        onClose={() => {
+          setEditingCategory(null);
+          editForm.reset();
+        }}
+        title="Edit Category"
+      >
+        <form
+          onSubmit={editForm.handleSubmit((data) => {
+            if (editingCategory) {
+              updateMutation.mutateAsync({ id: editingCategory.id, data });
+            }
+          })}
+          className="space-y-4"
+        >
+          <Input
+            label="Category Name"
+            placeholder="e.g. Shopping"
+            error={editForm.formState.errors.name?.message}
+            {...editForm.register("name")}
+          />
+          <div className="flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setEditingCategory(null);
+                editForm.reset();
+              }}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={updateMutation.isPending}>
+              Update
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Category */}
+      <ConfirmDialog
+        isOpen={!!deletingCategory}
+        onClose={() => setDeletingCategory(null)}
+        onConfirm={() =>
+          deletingCategory && deleteMutation.mutateAsync(deletingCategory.id)
+        }
+        title="Delete Category"
+        message={`Are you sure you want to delete "${deletingCategory?.name}"? This action cannot be undone.`}
+        isLoading={deleteMutation.isPending}
+      />
     </MainLayout>
   );
 }
