@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { AuthProvider } from "./contexts/AuthProvider";
+import { ToastProvider } from "./contexts/ToastProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import GuestRoute from "./components/auth/GuestRoute";
 import LoginPage from "./pages/LoginPage";
@@ -9,6 +10,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,7 +73,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
