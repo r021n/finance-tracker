@@ -9,6 +9,7 @@ import {
 } from "../api/transactions";
 import type { Transaction } from "../types";
 import type { TransactionFormData } from "../lib/validation";
+import { useToastContext } from "../contexts/useToastContext";
 import MainLayout from "../components/layout/MainLayout";
 import TransactionCard from "../components/transaction/TransactionCard";
 import TransactionForm from "../components/transaction/TransactionForm";
@@ -17,10 +18,13 @@ import Modal from "../components/ui/Modal";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import Pagination from "../components/ui/Pagination";
 import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
+import Spinner from "../components/ui/Spinner";
+import ErrorState from "../components/ui/ErrorState";
+import EmptyState from "../components/ui/EmptyState";
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
+  const toast = useToastContext();
 
   const [filter, setFilter] = useState<TransactionFilter>({
     page: 1,
@@ -31,10 +35,8 @@ export default function TransactionsPage() {
     useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] =
     useState<Transaction | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { data, isPending } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["transactions", filter],
     queryFn: () => transactionsApi.getAll(filter),
   });
@@ -42,25 +44,21 @@ export default function TransactionsPage() {
   const transactions = data?.data || [];
   const meta = data?.meta;
 
-  const showSuccess = (message: string) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
-
-  const showError = (message: string) => {
-    setErrorMessage(message);
-    setTimeout(() => setErrorMessage(null), 3000);
-  };
-
   const createMutation = useMutation({
     mutationFn: transactionsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setIsCreateModalOpen(false);
-      showSuccess("Transaction created successfully");
+      toast.success("Transaction created successfully");
     },
-    onError: (err: any) => {
-      showError(err?.response?.data?.message || "Failed to create transaction");
+    onError: (err: unknown) => {
+      const errorResponse = err as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(
+        errorResponse?.response?.data?.message ||
+          "Failed to create transaction",
+      );
     },
   });
 
@@ -70,10 +68,16 @@ export default function TransactionsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setEditingTransaction(null);
-      showSuccess("Transaction updated successfully");
+      toast.success("Transaction updated successfully");
     },
-    onError: (err: any) => {
-      showError(err?.response?.data?.message || "Failed to update transaction");
+    onError: (err: unknown) => {
+      const errorResponse = err as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(
+        errorResponse?.response?.data?.message ||
+          "Failed to update transaction",
+      );
     },
   });
 
@@ -82,10 +86,15 @@ export default function TransactionsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setDeletingTransaction(null);
-      showSuccess("Transaction deleted successfully");
+      toast.success("Transaction deleted successfully");
     },
-    onError: (err: any) => {
-      showError(err.response?.data?.message || "Failed to delete transaction");
+    onError: (err: unknown) => {
+      const errorResponse = err as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(
+        errorResponse.response?.data?.message || "Failed to delete transaction",
+      );
     },
   });
 
@@ -94,14 +103,14 @@ export default function TransactionsPage() {
       category_id: data.category_id,
       type: data.type,
       amount: data.amount,
-      note: data.note,
+      note: data.note || "",
       date: data.date,
     });
   };
 
   const handleEditSubmit = (data: TransactionFormData) => {
     updateMutation.mutate({
-      id: editingTransaction.id,
+      id: editingTransaction!.id,
       data: {
         category_id: data.category_id,
         type: data.type,
@@ -133,43 +142,37 @@ export default function TransactionsPage() {
         </Button>
       </div>
 
-      {successMessage && (
-        <div className="mb-4">
-          <Alert type="success" message={successMessage} />
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="mb-4">
-          <Alert type="error" message={errorMessage} />
-        </div>
-      )}
-
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-600">
-            {meta ? `${meta.total_items} transactions found` : "Loading..."}
+            {isLoading
+              ? "Loading..."
+              : `${meta?.total_items} transactions found`}
           </p>
           <TransactionFilterComponent onFilterChange={handleFilterChange} />
         </div>
 
-        {isPending ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-20 bg-gray-100 rounded-xl animate-pulse"
-              />
-            ))}
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Spinner />
           </div>
+        ) : isError ? (
+          <ErrorState
+            message="Failed to load transactions"
+            onRetry={() => refetch()}
+          />
         ) : transactions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <ArrowLeftRight className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="font-medium">No transactions found</p>
-            <p className="text-sm mt-1">
-              Try adjusting the filter or add a new transaction
-            </p>
-          </div>
+          <EmptyState
+            icon={<ArrowLeftRight className="w-8 h-8" />}
+            title="No transactions found"
+            description="Try adjusting the filter or add a new transaction."
+            action={
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add Transaction
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-3">
             {transactions.map((transaction) => (

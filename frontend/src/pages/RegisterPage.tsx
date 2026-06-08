@@ -1,4 +1,3 @@
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -7,21 +6,20 @@ import { UserPlus } from "lucide-react";
 
 import { authApi } from "../api/auth";
 import { useAuth } from "../contexts/useAuth";
+import { useToastContext } from "../contexts/useToastContext";
 import { registerSchema, type RegisterFormData } from "../lib/validation";
 
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [isPendingNav, startTransition] = useTransition();
+  const toast = useToastContext();
 
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting, isValid },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -40,9 +38,8 @@ export default function RegisterPage() {
     onSuccess: (response) => {
       if (response.data) {
         login(response.data.token, response.data.user);
-        startTransition(() => {
-          navigate("/dashboard", { replace: true });
-        });
+        toast.success("Account created successfully");
+        navigate("/dashboard", { replace: true });
       }
     },
     onError: (error) => {
@@ -50,7 +47,7 @@ export default function RegisterPage() {
         error instanceof Error && error.message
           ? error.message
           : "Registration failed. Please try again.";
-      setError("root.serverError", { type: "server", message });
+      toast.error(message);
     },
   });
 
@@ -58,9 +55,6 @@ export default function RegisterPage() {
     const { ...payload } = data;
     await mutation.mutateAsync(payload);
   };
-
-  const isLoading = isSubmitting || mutation.isPending || isPendingNav;
-  const serverError = errors.root?.serverError?.message;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
@@ -75,12 +69,6 @@ export default function RegisterPage() {
               Start tracking your finances today
             </p>
           </div>
-
-          {serverError && (
-            <div className="mb-6">
-              <Alert type="error" message={serverError} />
-            </div>
-          )}
 
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -126,7 +114,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               className="w-full"
-              isLoading={isLoading}
+              isLoading={mutation.isPending}
               disabled={!isValid && !isSubmitting}
             >
               Create Account

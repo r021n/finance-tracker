@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,15 +7,15 @@ import type { AxiosError } from "axios";
 
 import { authApi } from "../api/auth";
 import { useAuth } from "../contexts/useAuth";
+import { useToastContext } from "../contexts/useToastContext";
 import { loginSchema, type LoginFormData } from "../lib/validation";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToastContext();
 
   const {
     register,
@@ -37,14 +36,13 @@ export default function LoginPage() {
     },
     onError: (err) => {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      setError(
+      toast.error(
         axiosErr.response?.data?.message ?? "login failed, please try again",
       );
     },
   });
 
   const onSubmit = (data: LoginFormData) => {
-    setError(null);
     mutation.mutate(data);
   };
 
@@ -59,12 +57,6 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
             <p className="text-gray-600 mt-2">Sign in to your account</p>
           </div>
-
-          {error && (
-            <div className="mb-6" role="alert">
-              <Alert type="error" message={error} />
-            </div>
-          )}
 
           <form
             onSubmit={handleSubmit(onSubmit)}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,45 +7,32 @@ import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { categoriesApi } from "../api/categories";
 import type { Category } from "../types";
 import { categorySchema, type CategoryFormData } from "../lib/validation";
+import { useToastContext } from "../contexts/useToastContext";
 import MainLayout from "../components/layout/MainLayout";
 import Modal from "../components/ui/Modal";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
+import Spinner from "../components/ui/Spinner";
+import ErrorState from "../components/ui/ErrorState";
+import EmptyState from "../components/ui/EmptyState";
 
 export default function CategoryPage() {
   const queryClient = useQueryClient();
+  const toast = useToastContext();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(
     null,
   );
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { data, isLoading, isPending } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["categories"],
     queryFn: categoriesApi.getAll,
   });
 
   const categories: Category[] = data?.data ?? [];
-
-  useEffect(() => {
-    if (!successMessage) return;
-    const t = setTimeout(() => setSuccessMessage(null), 3000);
-    return () => clearTimeout(t);
-  }, [successMessage]);
-
-  useEffect(() => {
-    if (!errorMessage) return;
-    const t = setTimeout(() => setErrorMessage(null), 3000);
-    return () => clearTimeout(t);
-  }, [errorMessage]);
-
-  const showSuccess = (message: string) => setSuccessMessage(message);
-  const showError = (message: string) => setErrorMessage(message);
 
   const createForm = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -63,12 +50,13 @@ export default function CategoryPage() {
       await queryClient.invalidateQueries({ queryKey: ["categories"] });
       setIsCreateModalOpen(false);
       createForm.reset();
-      showSuccess("Category created successfully");
+      toast.success("Category created successfully");
     },
     onError: (err: unknown) => {
       const msg =
-        (err as any)?.response?.data?.message ?? "Failed to create category";
-      showError(msg);
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to create category";
+      toast.error(msg);
     },
   });
 
@@ -79,12 +67,13 @@ export default function CategoryPage() {
       await queryClient.invalidateQueries({ queryKey: ["categories"] });
       setEditingCategory(null);
       editForm.reset();
-      showSuccess("Category updated successfully");
+      toast.success("Category updated successfully");
     },
     onError: (err: unknown) => {
       const msg =
-        (err as any)?.response?.data?.message ?? "Failed to update category";
-      showError(msg);
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to update category";
+      toast.error(msg);
     },
   });
 
@@ -93,12 +82,13 @@ export default function CategoryPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["categories"] });
       setDeletingCategory(null);
-      showSuccess("Category deleted successfully");
+      toast.success("Category deleted successfully");
     },
     onError: (err: unknown) => {
       const msg =
-        (err as any)?.response?.data?.message ?? "Failed to delete category";
-      showError(msg);
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to delete category";
+      toast.error(msg);
     },
   });
 
@@ -106,8 +96,6 @@ export default function CategoryPage() {
     setEditingCategory(category);
     editForm.reset({ name: category.name });
   };
-
-  const loading = isLoading || isPending;
 
   return (
     <MainLayout>
@@ -122,33 +110,28 @@ export default function CategoryPage() {
         </Button>
       </div>
 
-      {successMessage && (
-        <div className="mb-4">
-          <Alert type="success" message={successMessage} />
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="mb-4">
-          <Alert type="error" message={errorMessage} />
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-16 bg-gray-100 rounded-xl animate-pulse"
-              />
-            ))}
+      <div className="card">
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Spinner />
           </div>
+        ) : isError ? (
+          <ErrorState
+            message="Failed to load categories"
+            onRetry={() => refetch()}
+          />
         ) : categories.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <Tag className="text-center py-12 text-gray-300" />
-            <p className="font-medium">No categories found</p>
-          </div>
+          <EmptyState
+            icon={<Tag className="w-8 h-8" />}
+            title="No categories found"
+            description="Add your first category to get started"
+            action={
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="w-4 h-4" />
+                Add Category
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-3">
             {categories.map((category) => (
