@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, Wallet, ArrowLeftRight } from "lucide-react";
 import { Link } from "react-router";
@@ -8,27 +9,39 @@ import { formatCurrency } from "../lib/utils";
 import MainLayout from "../components/layout/MainLayout";
 import SummaryCard from "../components/dashboard/SummaryCard";
 import TransactionCard from "../components/transaction/TransactionCard";
+import Spinner from "../components/ui/Spinner";
+import ErrorState from "../components/ui/ErrorState";
+import EmptyState from "../components/ui/EmptyState";
 
 export default function DashboardPage() {
   const { user } = useAuth();
 
-  const { data: transactionsResponse, isPending } = useQuery({
+  const {
+    data: transactionsResponse,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["transactions", 100],
     queryFn: () => transactionsApi.getAll({ limit: 100 }),
     staleTime: 5 * 60 * 1000,
   });
 
-  const transactions = transactionsResponse?.data ?? [];
+  const transactions = useMemo(() => {
+    return transactionsResponse?.data ?? [];
+  }, [transactionsResponse?.data]);
 
-  const totalIncome = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const summary = useMemo(() => {
+    const totalIncome = transactions
+      .filter((t) => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalExpense = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = transactions
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0);
 
-  const balance = totalIncome - totalExpense;
+    return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
+  }, [transactions]);
 
   const recentTransactions = transactions.slice(0, 5);
 
@@ -44,28 +57,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <SummaryCard
           title="Balance"
-          value={formatCurrency(balance)}
+          value={isPending ? "..." : formatCurrency(summary.balance)}
           icon={<Wallet className="w-6 h-6" />}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-100"
+          colorClass={summary.balance >= 0 ? "text-blue-600" : "text-red-600"}
+          bgClass={summary.balance >= 0 ? "bg-blue-100" : "bg-red-100"}
         />
         <SummaryCard
           title="Total Income"
-          value={formatCurrency(totalIncome)}
+          value={isPending ? "..." : formatCurrency(summary.totalIncome)}
           icon={<TrendingUp className="w-6 h-6" />}
           colorClass="text-green-600"
           bgClass="bg-green-100"
         />
         <SummaryCard
           title="Total Expense"
-          value={formatCurrency(totalExpense)}
+          value={isPending ? "..." : formatCurrency(summary.totalExpense)}
           icon={<TrendingDown className="w-6 h-6" />}
           colorClass="text-red-600"
           bgClass="bg-red-100"
         />
 
-        <div className="card border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+        <div className="card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
               Recent Transactions
             </h3>
@@ -79,25 +92,28 @@ export default function DashboardPage() {
           </div>
 
           {isPending ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-gray-100 rounded-xl animate-pulse"
-                />
-              ))}
+            <div className="flex justify-center py-12">
+              <Spinner />
             </div>
+          ) : isError ? (
+            <ErrorState
+              message="Failed to load transactions"
+              onRetry={() => refetch()}
+            />
           ) : recentTransactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <ArrowLeftRight className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No transactions yet</p>
-              <Link
-                to="/transactions"
-                className="text-blue-600 hover:underline text-sm mt-2 block"
-              >
-                Add your first transaction
-              </Link>
-            </div>
+            <EmptyState
+              icon={<ArrowLeftRight className="h-8 w-8" />}
+              title="No transaction yet"
+              description="Start by adding your first transaction."
+              action={
+                <Link
+                  to="/transactions"
+                  className="text-sm font-medium text-blue-600 hover:underline"
+                >
+                  Add your first transaction
+                </Link>
+              }
+            />
           ) : (
             <div className="space-y-3">
               {recentTransactions.map((transaction) => (
