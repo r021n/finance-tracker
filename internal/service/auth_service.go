@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance-tracker/internal/model"
 	"finance-tracker/internal/repository"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -24,6 +25,9 @@ func NewAuthService(userRepo *repository.UserRepository, jwtSecret string) *Auth
 }
 
 func (s *AuthService) Register(req model.RegisterRequest) (*model.AuthResponse, error) {
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	req.Name = strings.TrimSpace(req.Name)
+
 	existingUser, _ := s.userRepo.FindByEmail(req.Email)
 	if existingUser != nil {
 		return nil, errors.New("email already registered")
@@ -57,12 +61,14 @@ func (s *AuthService) Register(req model.RegisterRequest) (*model.AuthResponse, 
 }
 
 func (s *AuthService) Login(req model.LoginRequest) (*model.AuthResponse, error) {
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Invalid email or password")
+			return nil, errors.New("invalid email or password")
 		}
-		return nil, errors.New("Failed to find user")
+		return nil, errors.New("failed to find user")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
@@ -71,7 +77,7 @@ func (s *AuthService) Login(req model.LoginRequest) (*model.AuthResponse, error)
 
 	token, err := s.generateToken(user)
 	if err != nil {
-		return nil, errors.New("Failed to generate token")
+		return nil, errors.New("failed to generate token")
 	}
 
 	return &model.AuthResponse{Token: token, User: *user}, nil
