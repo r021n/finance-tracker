@@ -39,9 +39,11 @@ func (s *TransactionService) Create(userID uint, req model.CreateTransactionRequ
 		return nil, errors.New("invalid date format, use YYYY-MM-DD")
 	}
 
+	categoryIDVal := req.CategoryID
+
 	transaction := &model.Transaction{
 		UserID:     userID,
-		CategoryID: req.CategoryID,
+		CategoryID: &categoryIDVal,
 		Type:       req.Type,
 		Amount:     req.Amount,
 		Note:       req.Note,
@@ -122,7 +124,9 @@ func (s *TransactionService) Update(id uint, userID uint, req model.UpdateTransa
 		return nil, errors.New("invalid date format, use YYYY-MM-DD")
 	}
 
-	transaction.CategoryID = req.CategoryID
+	categoryIDVal := req.CategoryID
+
+	transaction.CategoryID = &categoryIDVal
 	transaction.Type = req.Type
 	transaction.Amount = req.Amount
 	transaction.Note = req.Note
