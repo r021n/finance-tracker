@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 
 interface SpinnerProps {
-  size?: "sm" | "md" | "ld";
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 

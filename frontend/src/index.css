@@ -1,9 +1,54 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "simplebar-react/dist/simplebar.min.css";
 
 @layer base {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  /* Override simplebar scrollbar styling to match app theme */
+  .simplebar-scrollbar::before {
+    background-color: theme("colors.gray.400") !important;
+    border-radius: 9999px !important;
+    transition: background-color 0.2s ease;
+  }
+
+  .simplebar-scrollbar.simplebar-visible::before {
+    opacity: 0.6;
+  }
+
+  .simplebar-scrollbar.simplebar-hover::before {
+    background-color: theme("colors.gray.500") !important;
+    opacity: 0.8;
+  }
+
+  .simplebar-track.simplebar-vertical {
+    width: 8px;
+  }
+
+  .simplebar-track.simplebar-horizontal {
+    height: 8px;
+  }
+
+  .simplebar-track.simplebar-vertical .simplebar-scrollbar::before {
+    left: 2px;
+    right: 2px;
+  }
+
+  .simplebar-track.simplebar-horizontal .simplebar-scrollbar::before {
+    top: 2px;
+    bottom: 2px;
   }
 }
 
